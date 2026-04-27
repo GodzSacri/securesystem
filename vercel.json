@@ -1,14 +1,15 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/frontend/login.html" },
-    { "source": "/login", "destination": "/frontend/login.html" },
-    { "source": "/inbox", "destination": "/frontend/inbox.html" },
-    { "source": "/compose", "destination": "/frontend/compose.html" },
-    { "source": "/sent", "destination": "/frontend/sent.html" },
-    { "source": "/admin", "destination": "/frontend/admin.html" },
-    { "source": "/view_message/:id", "destination": "/frontend/view_message.html" },
-    { "source": "/css/(.*)", "destination": "/frontend/css/$1" },
-    { "source": "/js/(.*)", "destination": "/frontend/js/$1" },
-    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" }
-  ]
+    { "source": "/", "destination": "/login.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/inbox", "destination": "/inbox.html" },
+    { "source": "/compose", "destination": "/compose.html" },
+    { "source": "/sent", "destination": "/sent.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/view_message/:id", "destination": "/view_message.html" },
+    { "source": "/css/(.*)", "destination": "/css/$1" },
+    { "source": "/js/(.*)", "destination": "/js/$1" },
+    { "source": "/assets/(.*)", "destination": "/assets/$1" }
+  ],
+  "cleanUrls": true
 }
