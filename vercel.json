@@ -1,9 +1,5 @@
 {
   "rewrites": [
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/inbox", "destination": "/inbox.html" },
-    { "source": "/compose", "destination": "/compose.html" },
-    { "source": "/sent", "destination": "/sent.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/login", "destination": "/login.html" }
   ]
 }
