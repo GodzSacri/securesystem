@@ -129,14 +129,17 @@ async function login() {
     localStorage.setItem("role", data.role);
     localStorage.setItem("email", email);
 
-    if (data.role === "admin") location.href = "/admin";
-    else location.href = "/inbox";
+    // Redirect to Vercel frontend pages
+    if (data.role === "admin") {
+      window.location.href = "https://securesystem-wcd6.vercel.app/admin";
+    } else {
+      window.location.href = "https://securesystem-wcd6.vercel.app/inbox";
+    }
 
   } catch (e) {
     showNotification(e.message, true);
   }
 }
-
 async function register() {
   const email = document.getElementById("regEmail").value.trim();
   const password = document.getElementById("regPassword").value;
