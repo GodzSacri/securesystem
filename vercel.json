@@ -1,7 +1,7 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/frontend/login.html" },
-    { "source": "/login", "destination": "/frontend/index.html" },
+    { "source": "/login", "destination": "/frontend/login.html" },
     { "source": "/inbox", "destination": "/frontend/inbox.html" },
     { "source": "/compose", "destination": "/frontend/compose.html" },
     { "source": "/sent", "destination": "/frontend/sent.html" },
