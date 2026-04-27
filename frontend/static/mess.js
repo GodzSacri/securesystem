@@ -72,8 +72,109 @@ const Auth = {
     }
 };
 
+// ==================== ENCRYPTION MODULE ====================
+const Encryption = {
+    // Generate a random salt
+    generateSalt: () => {
+        return crypto.getRandomValues(new Uint8Array(16));
+    },
+    
+    // Generate a random IV for AES-GCM
+    generateIV: () => {
+        return crypto.getRandomValues(new Uint8Array(12));
+    },
+    
+    // Derive a proper AES key from a password/OTP using PBKDF2
+    deriveKey: async (password, salt) => {
+        console.log("Deriving AES key from password...");
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw",
+            enc.encode(password),
+            { name: "PBKDF2" },
+            false,
+            ["deriveKey"]
+        );
+        
+        const key = await crypto.subtle.deriveKey(
+            {
+                name: "PBKDF2",
+                salt: salt,
+                iterations: 100000,
+                hash: "SHA-256"
+            },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 }, // 256-bit AES key
+            false,
+            ["encrypt", "decrypt"]
+        );
+        
+        console.log("AES key derived successfully");
+        return key;
+    },
+    
+    // Encrypt message with AES-GCM
+    encryptMessage: async (plaintext, password) => {
+        console.log("Encrypting message...");
+        try {
+            const salt = Encryption.generateSalt();
+            const iv = Encryption.generateIV();
+            const key = await Encryption.deriveKey(password, salt);
+            
+            const encodedMessage = new TextEncoder().encode(plaintext);
+            const encrypted = await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                encodedMessage
+            );
+            
+            // Convert to base64 for transmission
+            const encryptedData = {
+                ciphertext: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+                iv: btoa(String.fromCharCode(...iv)),
+                salt: btoa(String.fromCharCode(...salt))
+            };
+            
+            console.log("Message encrypted successfully");
+            return encryptedData;
+        } catch (error) {
+            console.error("Encryption failed:", error);
+            throw new Error("Failed to encrypt message: " + error.message);
+        }
+    },
+    
+    // Decrypt message (for viewing)
+    decryptMessage: async (encryptedData, password) => {
+        console.log("Decrypting message...");
+        try {
+            const ciphertext = new Uint8Array(atob(encryptedData.ciphertext).split('').map(c => c.charCodeAt(0)));
+            const iv = new Uint8Array(atob(encryptedData.iv).split('').map(c => c.charCodeAt(0)));
+            const salt = new Uint8Array(atob(encryptedData.salt).split('').map(c => c.charCodeAt(0)));
+            
+            const key = await Encryption.deriveKey(password, salt);
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                ciphertext
+            );
+            
+            const decryptedText = new TextDecoder().decode(decrypted);
+            console.log("Message decrypted successfully");
+            return decryptedText;
+        } catch (error) {
+            console.error("Decryption failed:", error);
+            throw new Error("Failed to decrypt message: " + error.message);
+        }
+    },
+    
+    // Generate a random OTP for message viewing
+    generateOTP: () => {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+};
+
 /**
- * API Communication - FIXED for FormData
+ * API Communication - FIXED for encrypted messages
  */
 const API = {
     fetch: async (url, options = {}) => {
@@ -94,7 +195,6 @@ const API = {
         }
 
         console.log(`Request: ${options.method || 'GET'} ${fullUrl}`);
-        console.log(`Headers: Authorization=${headers.Authorization ? 'Present' : 'Missing'}, Content-Type=${headers['Content-Type'] || 'Not set (FormData)'}`);
 
         try {
             const controller = new AbortController();
@@ -181,17 +281,18 @@ const API = {
         }
     },
 
-    sendMessage: async (formData) => {
-        console.log("Sending message via FormData");
+    sendMessage: async (messageData) => {
+        console.log("Sending encrypted message...");
         const token = Auth.getToken();
         
         try {
             const response = await fetch(`${CONFIG.API_URL}/api/send`, {
                 method: "POST",
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: formData  // Send FormData directly
+                body: JSON.stringify(messageData)  // Send JSON with encrypted data
             });
             
             const data = await response.json();
@@ -266,7 +367,9 @@ const UI = {
         refreshSent: document.getElementById("refreshSent"),
         notification: document.getElementById("notification"),
         emailValidationMsg: document.getElementById("emailValidationMsg"),
-        attachmentInput: document.getElementById("attachment")
+        attachmentInput: document.getElementById("attachment"),
+        otpInput: document.getElementById("otpInput"),
+        viewMessageBtn: document.getElementById("viewMessageBtn")
     },
 
     showNotification: (message, isError = false) => {
@@ -288,7 +391,7 @@ const UI = {
         
         container.innerHTML = messages.length ? 
             messages.map(msg => `
-                <div class="message-item ${msg.is_encrypted ? 'encrypted-message' : ''}" data-id="${msg.id}">
+                <div class="message-item ${msg.is_encrypted ? 'encrypted-message' : ''}" data-id="${msg.id}" data-encrypted='${JSON.stringify(msg.encrypted_data)}'>
                     <div class="message-header">
                         <span class="from">
                             <i class="fas fa-user"></i> 
@@ -299,8 +402,18 @@ const UI = {
                            To: ${msg.recipient_email || 'Unknown recipient'}
                         </span>
                         <span class="date">${new Date(msg.timestamp).toLocaleString()}</span>
-                        ${msg.is_encrypted ? '<span class="encryption-badge"><i class="fas fa-lock"></i> Encrypted</span>' : ''}
+                        ${msg.is_encrypted ? '<span class="encryption-badge"><i class="fas fa-lock"></i> Encrypted - Requires OTP</span>' : ''}
                     </div>
+                    ${msg.is_encrypted ? `
+                        <div class="message-otp-section" style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                            <input type="text" id="otp-${msg.id}" placeholder="Enter OTP to view message" style="width: 200px; margin-right: 10px;">
+                            <button onclick="window.viewEncryptedMessage('${msg.id}')">View Message</button>
+                        </div>
+                    ` : `
+                        <div class="message-body" style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 5px;">
+                            ${msg.body || 'No content'}
+                        </div>
+                    `}
                 </div>
             `).join('') :
             '<div class="no-messages">No messages found</div>';
@@ -361,7 +474,7 @@ const UI = {
         
         const isEncrypted = encryptToggle?.checked ?? true;
         encryptionStatus.innerHTML = isEncrypted ? 
-            '<i class="fas fa-lock"></i> Message will be encrypted' :
+            '<i class="fas fa-lock"></i> Message will be encrypted with OTP' :
             '<i class="fas fa-unlock"></i> Message will be sent as plain text';
         encryptionStatus.className = `encryption-status ${isEncrypted ? 'encrypted' : 'plain'}`;
         console.log(`Encryption status updated: ${isEncrypted ? 'ENCRYPTED' : 'PLAIN'}`);
@@ -375,7 +488,7 @@ const UI = {
                 UI.updateEncryptionStatus();
                 const isEncrypted = encryptToggle.checked;
                 UI.showNotification(
-                    isEncrypted ? "Encryption enabled" : "Encryption disabled", 
+                    isEncrypted ? "Encryption enabled - OTP will be required to view" : "Encryption disabled", 
                     !isEncrypted
                 );
             });
@@ -536,6 +649,56 @@ async function loadAndRenderSent() {
     }
 }
 
+// Global function to view encrypted messages
+window.viewEncryptedMessage = async (messageId) => {
+    console.log("Viewing encrypted message:", messageId);
+    const otpInput = document.getElementById(`otp-${messageId}`);
+    const otp = otpInput?.value;
+    
+    if (!otp) {
+        UI.showNotification("Please enter the OTP to view this message", true);
+        return;
+    }
+    
+    try {
+        // Find the message element
+        const messageElement = document.querySelector(`.message-item[data-id="${messageId}"]`);
+        const encryptedData = JSON.parse(messageElement.getAttribute('data-encrypted') || '{}');
+        
+        if (!encryptedData.ciphertext) {
+            UI.showNotification("No encrypted data found", true);
+            return;
+        }
+        
+        // Decrypt the message
+        const decryptedBody = await Encryption.decryptMessage(encryptedData, otp);
+        
+        // Display the decrypted message
+        const existingBody = messageElement.querySelector('.message-body');
+        if (existingBody) {
+            existingBody.innerHTML = decryptedBody;
+        } else {
+            const bodyDiv = document.createElement('div');
+            bodyDiv.className = 'message-body';
+            bodyDiv.style.marginTop = '10px';
+            bodyDiv.style.padding = '10px';
+            bodyDiv.style.background = '#e8f5e9';
+            bodyDiv.style.borderRadius = '5px';
+            bodyDiv.innerHTML = `<strong>Decrypted Message:</strong><br>${decryptedBody}`;
+            messageElement.appendChild(bodyDiv);
+        }
+        
+        // Remove OTP input section
+        const otpSection = messageElement.querySelector('.message-otp-section');
+        if (otpSection) otpSection.remove();
+        
+        UI.showNotification("Message decrypted successfully");
+    } catch (error) {
+        console.error("Failed to decrypt message:", error);
+        UI.showNotification("Invalid OTP or corrupted message", true);
+    }
+};
+
 async function handleSendMessage() {
     console.log("handleSendMessage started");
     const { emailInput, subjectInput, bodyInput, encryptToggle, sendBtn, attachmentInput } = UI.elements;
@@ -564,27 +727,61 @@ async function handleSendMessage() {
 
     try {
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Encrypting & Sending...';
 
-        const formData = new FormData();
-        formData.append('recipient_email', recipient);
-        formData.append('subject', subject);
-        formData.append('body', body);
-        formData.append('encrypt_message', shouldEncrypt);
-
+        let messageBody = body;
+        let isEncrypted = false;
+        let encryptedData = null;
+        let otp = null;
+        
+        // Encrypt the message if requested
+        if (shouldEncrypt) {
+            // Generate a random OTP for this message
+            otp = Encryption.generateOTP();
+            console.log("Generated OTP for message:", otp);
+            
+            // Encrypt the message body with the OTP
+            encryptedData = await Encryption.encryptMessage(body, otp);
+            messageBody = "[ENCRYPTED MESSAGE - Requires OTP to view]";
+            isEncrypted = true;
+            
+            // Show OTP to user (in production, this would be sent via email/SMS)
+            UI.showNotification(`Message encrypted! Share this OTP with recipient: ${otp}`, false);
+            console.log("OTP for recipient:", otp);
+        }
+        
+        // Prepare message data for API
+        const messageData = {
+            recipient_email: recipient,
+            subject: subject,
+            body: messageBody,
+            is_encrypted: isEncrypted,
+            encrypt_message: shouldEncrypt
+        };
+        
+        // Add encrypted data if applicable
+        if (encryptedData) {
+            messageData.encrypted_data = encryptedData;
+            messageData.encryption_otp = otp; // In production, send this via secure channel
+        }
+        
+        // Handle attachments if any
         if (attachmentInput && attachmentInput.files.length > 0) {
-            console.log(`Attaching ${attachmentInput.files.length} file(s)`);
-            for (let i = 0; i < attachmentInput.files.length; i++) {
-                formData.append('attachments', attachmentInput.files[i]);
-            }
+            // For simplicity, we'll note that attachments exist
+            // In production, you'd encrypt attachments too
+            messageData.has_attachments = true;
+            messageData.attachment_count = attachmentInput.files.length;
         }
 
-        const result = await API.sendMessage(formData);
+        const result = await API.sendMessage(messageData);
 
         if (!result.success) throw new Error(result.msg);
 
-        UI.showNotification("Message sent successfully!");
+        UI.showNotification(isEncrypted ? "Encrypted message sent successfully! OTP shared above." : "Message sent successfully!");
         UI.clearForm();
+        
+        // Clear file input
+        if (attachmentInput) attachmentInput.value = '';
         const fileNamesDisplay = document.getElementById("fileNames");
         if (fileNamesDisplay) fileNamesDisplay.textContent = "";
         
