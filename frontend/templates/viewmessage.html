@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SecureSys Mail - View Message</title>
+  <link rel="stylesheet" href="/static/mess.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2><i class="fas fa-shield-alt"></i> SecureSys</h2>
+      </div>
+      
+      <div class="user-info">
+        <span id="userEmail"><i class="fas fa-user-circle"></i> Loading...</span>
+        <button id="btnLogout" class="logout-btn">Logout</button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button id="btnCompose" class="nav-btn">Compose</button>
+        <button id="btnInbox" class="nav-btn active">Inbox</button>
+        <button id="btnSent" class="nav-btn">Sent</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <section id="viewMessageSection" class="view-message-section">
+        <div class="section-header">
+          <h3>View Message</h3>
+        </div>
+
+        <div class="form-group">
+          <label>From:</label>
+          <p>{{ messages[0].sender_email }}</p>
+        </div>
+
+        <div class="form-group">
+          <label>To:</label>
+          <p>{{ messages[0].recipient_email }}</p>
+        </div>
+
+        <div class="form-group">
+          <label>Subject:</label>
+          <p>{{ messages[0].subject }}</p>
+        </div>
+
+        <div class="form-group">
+          <label>Message:</label>
+          <p>{{ messages[0].body }}</p>
+        </div>
+
+        <div class="form-group">
+          <label>Attachment:</label>
+          {% if messages[0].attachment_path %}
+            <p>
+              <a href="{{ url_for('uploaded_file', filename=messages[0].attachment_path) }}" target="_blank">
+                <i class="fas fa-paperclip"></i> {{ messages[0].attachment_path }}
+              </a>
+            </p>
+          {% else %}
+            <p><em>No attachment</em></p>
+          {% endif %}
+        </div>
+
+        <!-- Reply Section -->
+        <div class="section-header">
+          <h3>Reply</h3>
+        </div>
+
+<form id="replyForm" enctype="multipart/form-data">
+  <div class="form-group">
+    <label for="replyBody">Your Reply:</label>
+    <textarea id="replyBody" name="replyBody" rows="4" placeholder="Write your reply here..." required></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="replyFile">Attach files (optional):</label>
+    <input type="file" id="replyFile" name="replyFile" accept="image/*,video/*,audio/*,application/pdf">
+  </div>
+
+  <input type="hidden" name="encrypt_message" value="true">
+
+  <div class="form-actions">
+    <button type="submit" class="primary-btn">Send Reply</button>
+  </div>
+</form>
+      </section>
+    </main>
+  </div>
+
+  <div id="notification" class="notification hidden"></div>
+
+  <script src="/static/mess.js"></script>
+<script>
+  document.getElementById('replyForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const form = this;
+    const formData = new FormData(form);
+    const recipientEmail = "{{ messages[0].sender_email }}"; // Reply goes to sender
+    const token = localStorage.getItem('token'); // Adjust if you're using sessionStorage or cookies
+
+    if (!token) {
+      alert("You are not logged in. Please login first.");
+      return;
+    }
+
+    formData.append("recipient_email", recipientEmail);
+
+    fetch('/reply', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token
+      },
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Reply sent successfully!');
+        form.reset();
+      } else {
+        alert(data.msg || 'Error sending reply.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error sending reply.');
+    });
+  });
+</script>
+</body>
+</html>

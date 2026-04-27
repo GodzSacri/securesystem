@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecureSys Login & Register</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { height: 100vh; background: linear-gradient(135deg, #4e54c8, #8f94fb); display: flex; justify-content: center; align-items: center; }
+    .container { background: rgba(255,255,255,0.12); padding: 2rem; border-radius: 15px; width: 350px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); backdrop-filter: blur(10px); color: #fff; animation: fadeIn 1s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    h2 { text-align: center; margin-bottom: 1.5rem; }
+    .input-group { margin-bottom: 1rem; }
+    input[type="email"], input[type="password"], input[type="number"] { width: 100%; padding: 0.8rem; margin-top: 0.5rem; border: none; border-radius: 8px; background: rgba(255,255,255,0.2); color: white; font-size: 1rem; }
+    input::placeholder { color: #ddd; }
+    input:focus { outline: none; background: rgba(255,255,255,0.3); box-shadow: 0 0 0 2px rgba(108,99,255,0.4); }
+    button { width: 100%; padding: 0.8rem; margin-top: 1rem; border: none; border-radius: 8px; background: #6c63ff; color: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; }
+    button:hover { background: #5a54e8; transform: translateY(-2px); }
+    .toggle { text-align: center; margin-top: 1rem; font-size: 0.9rem; cursor: pointer; color: #ddd; }
+    .toggle:hover { color: white; text-decoration: underline; }
+    .hidden { display: none; }
+    .captcha { font-size: 0.9rem; margin-top: 0.5rem; }
+    #notification { position: fixed; bottom: 20px; right: 20px; padding: 15px; border-radius: 8px; background: #4CAF50; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h2 id="formTitle">Login</h2>
+
+  <!-- LOGIN -->
+  <div id="loginForm">
+    <div class="input-group">
+      <input type="email" id="loginEmail" placeholder="Email">
+    </div>
+    <div class="input-group">
+      <input type="password" id="loginPassword" placeholder="Password">
+    </div>
+    <div class="captcha">
+      <span id="loginCaptchaQuestion"></span>
+      <input type="number" id="loginCaptchaAnswer" placeholder="Enter answer">
+    </div>
+    <button onclick="login()">Login</button>
+    <p class="toggle" onclick="toggleForm('register')">Don't have an account? Register</p>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="registerForm" class="hidden">
+    <div class="input-group">
+      <input type="email" id="regEmail" placeholder="Email">
+    </div>
+    <div class="input-group">
+      <input type="password" id="regPassword" placeholder="Password">
+    </div>
+    <div class="input-group">
+      <input type="password" id="regConfirmPassword" placeholder="Confirm Password">
+    </div>
+    <div class="captcha">
+      <span id="registerCaptchaQuestion"></span>
+      <input type="number" id="registerCaptchaAnswer" placeholder="Enter answer">
+    </div>
+    <button onclick="register()">Register</button>
+    <p class="toggle" onclick="toggleForm('login')">Already have an account? Login</p>
+  </div>
+</div>
+
+<div id="notification" class="hidden"></div>
+
+<script>
+const apiUrl = "http://127.0.0.1:5000";
+
+let loginCaptchaAnswer = 0;
+let registerCaptchaAnswer = 0;
+
+function generateCaptcha() {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  loginCaptchaAnswer = a + b;
+  document.getElementById("loginCaptchaQuestion").textContent = `Solve: ${a} + ${b} = `;
+
+  const c = Math.floor(Math.random() * 10) + 1;
+  const d = Math.floor(Math.random() * 10) + 1;
+  registerCaptchaAnswer = c + d;
+  document.getElementById("registerCaptchaQuestion").textContent = `Solve: ${c} + ${d} = `;
+}
+
+function showNotification(msg, error = false) {
+  const n = document.getElementById("notification");
+  n.textContent = msg;
+  n.style.background = error ? "#f44336" : "#4CAF50";
+  n.classList.remove("hidden");
+  setTimeout(() => n.classList.add("hidden"), 3000);
+}
+
+function toggleForm(type) {
+  document.getElementById("loginForm").classList.toggle("hidden", type === "register");
+  document.getElementById("registerForm").classList.toggle("hidden", type === "login");
+  document.getElementById("formTitle").textContent = type === "register" ? "Create Account" : "Login";
+  generateCaptcha();
+}
+
+async function login() {
+  // FIX: use getElementById instead of bare variable names
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const captchaInput = parseInt(document.getElementById("loginCaptchaAnswer").value);
+
+  if (!email || !password) {
+    showNotification("Please fill in all fields", true);
+    return;
+  }
+
+  if (captchaInput !== loginCaptchaAnswer) {
+    showNotification("Captcha incorrect", true);
+    generateCaptcha();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiUrl}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.msg);
+
+    localStorage.setItem("token", data.access_token);
+    localStorage.setItem("role", data.role);
+    // FIX: store email so Auth.getEmail() works throughout the app
+    localStorage.setItem("email", email);
+
+    if (data.role === "admin") location.href = "/admin";
+    else location.href = "/inbox";
+
+  } catch (e) {
+    showNotification(e.message, true);
+  }
+}
+
+async function register() {
+  // FIX: use getElementById instead of bare variable names
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value;
+  const confirmPassword = document.getElementById("regConfirmPassword").value;
+  const captchaInput = parseInt(document.getElementById("registerCaptchaAnswer").value);
+
+  if (!email || !password || !confirmPassword) {
+    showNotification("Please fill in all fields", true);
+    return;
+  }
+
+  // FIX: validate password confirmation (was completely missing)
+  if (password !== confirmPassword) {
+    showNotification("Passwords do not match", true);
+    return;
+  }
+
+  if (password.length < 6) {
+    showNotification("Password must be at least 6 characters", true);
+    return;
+  }
+
+  if (captchaInput !== registerCaptchaAnswer) {
+    showNotification("Captcha incorrect", true);
+    generateCaptcha();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiUrl}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // FIX: removed role from payload — no role selector in the form
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.msg);
+
+    showNotification("Registered successfully!");
+    toggleForm("login");
+
+  } catch (e) {
+    showNotification(e.message, true);
+  }
+}
+
+generateCaptcha();
+</script>
+</body>
+</html>

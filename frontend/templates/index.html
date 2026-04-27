@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SecureSys</title>
+<style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .header strong {
+            font-size: 1.5rem;
+            color: #007BFF;
+        }
+        .header button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .nav button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            background: #f0f8ff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        .input-area input, .input-area textarea {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .input-area button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .file-upload {
+            margin-top: 10px;
+        }
+        .file-upload input {
+            margin-bottom: 10px;
+        }
+        #recipientSelect {
+            margin-bottom: 10px;
+            padding: 6px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        #send h3, #messages h3 {
+            margin-top: 0;
+        }
+        /* Friends section styling */
+        #friends input {
+            width: calc(100% - 120px);
+            padding: 10px 14px;
+            border: 2px solid #007BFF;
+            border-radius: 30px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        #friends input:focus {
+            border-color: #0056b3;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+        }
+
+        #friends button {
+            width: 110px;
+            padding: 10px 0;
+            margin-left: 10px;
+            background: linear-gradient(45deg, #007BFF, #00c6ff);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #friends button:hover {
+            background: linear-gradient(45deg, #0056b3, #009edc);
+            box-shadow: 0 6px 16px rgba(0, 94, 179, 0.6);
+        }
+
+        #friendList {
+            margin-top: 20px;
+            list-style-type: none;
+            padding-left: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background-color: #fefefe;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        #friendList li {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+            color: #333;
+            transition: background-color 0.2s ease;
+            cursor: default;
+        }
+
+        #friendList li:last-child {
+            border-bottom: none;
+        }
+
+        #friendList li:hover {
+            background-color: #e9f5ff;
+        }
+
+        /* Friend avatar circle */
+        #friendList li::before {
+            content: attr(data-initial);
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            margin-right: 12px;
+            background: linear-gradient(135deg, #007BFF 0%, #00c6ff 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+        }   
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <strong>SecureSys</strong>
+            <div>
+                🧑‍💼 <span id="username">[User]</span> | <button id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <div class="nav">
+            <button onclick="showSection('messages')">📥 Messages</button>
+            <button onclick="showSection('send')">📤 Send</button>
+            <button onclick="showSection('files')">📁 Files</button>
+            <button onclick="showSection('friends')">👥 Friends</button>
+            <button onclick="showSection('settings')">⚙️ Settings</button>
+        </div>
+
+        <div id="messages" class="section active">
+            <h3>Chat with <span id="chatRecipient">[Select recipient]</span></h3>
+            <select id="recipientSelect" onchange="recipientChanged()">
+                <option value="" disabled selected>Select recipient</option>
+            </select>
+            <div class="chat-box" id="chatBox">
+                <p><em>Encrypted chat history will appear here...</em></p>
+            </div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type your message..." />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div id="send" class="section">
+            <h3>Send a Message</h3>
+            <input type="text" id="recipientInput" placeholder="Recipient username" />
+            <textarea id="messageText" rows="4" placeholder="Your message..."></textarea>
+            <br />
+            <button onclick="encryptAndSend()">Encrypt & Send</button>
+        </div>
+
+        <div id="files" class="section">
+            <h3>Files</h3>
+            <div class="file-upload">
+                <input type="file" id="fileInput" />
+                <button onclick="uploadFile()">Upload</button>
+            </div>
+        </div>
+
+        <div id="friends" class="section">
+            <h3>Friends</h3>
+            <input type="text" id="friendUsername" placeholder="Friend's username" />
+            <button onclick="addFriend()">Add Friend</button>
+            <br />
+            <button onclick="getFriends()">Load Friends</button>
+            <ul id="friendList"></ul>
+        </div>
+
+        <div id="settings" class="section">
+            <h3>Settings</h3>
+            <p>Coming soon...</p>
+        </div>
+    </div>
+
+    <script>
+        // Ensure token and username are set
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+
+        if (!token || !username) {
+            alert('Not authenticated! Redirecting to login...');
+            window.location.href = '/';
+        } else {
+            document.getElementById('username').textContent = username;
+        }
+
+        let currentRecipient = null;
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function recipientChanged() {
+            const recipient = document.getElementById('recipientSelect').value;
+            if (recipient) loadMessages(recipient);
+        }
+
+        async function loadMessages(recipient) {
+            try {
+                const res = await fetch(`/get-messages/${encodeURIComponent(recipient)}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error(`Failed to fetch messages (Status ${res.status})`);
+                const messages = await res.json();
+                const chatBox = document.getElementById('chatBox');
+                chatBox.innerHTML = '';
+                if (messages.length === 0) {
+                    chatBox.innerHTML = '<p><em>No messages yet.</em></p>';
+                } else {
+                    messages.forEach(msg => {
+                        const who = msg.sender === username ? 'You' : msg.sender;
+                        chatBox.innerHTML += `<p><strong>${who}:</strong> ${msg.encrypted_message} <em style="font-size:0.8em;color:#666;">[${msg.timestamp}]</em></p>`;
+                    });
+                }
+                chatBox.scrollTop = chatBox.scrollHeight;
+                currentRecipient = recipient;
+                document.getElementById('chatRecipient').textContent = recipient;
+            } catch (error) {
+                console.error('Load messages error:', error);
+                alert(error.message);
+            }
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('messageInput').value.trim();
+            if (!currentRecipient) return alert('Please select a recipient first.');
+            if (!message) return alert('Message cannot be empty.');
+            try {
+                const res = await fetch('/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ recipient: currentRecipient, message })
+                });
+                if (!res.ok) throw new Error(`Failed to send message (Status ${res.status})`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('messageInput').value = '';
+                    await loadMessages(currentRecipient);
+                } else {
+                    alert('Failed to send message: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Send message error:', error);
+                alert('An error occurred while sending the message.');
+            }
+        }
+
+        async function encryptAndSend() {
+            const recipient = document.getElementById('recipientInput').value.trim();
+            const message = document.getElementById('messageText').value.trim();
+            if (!recipient) return alert('Please enter a recipient username.');
+            if (!message) return alert('Please enter a message.');
+            if (recipient === username) return alert('You cannot send a message to yourself.');
+            try {
+                const res = await fetch('/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ recipient, message })
+                });
+                if (!res.ok) throw new Error(`Failed to send message (Status ${res.status})`);
+                const data = await res.json();
+                if (data.success) {
+                    alert('Message sent successfully!');
+                    document.getElementById('recipientInput').value = '';
+                    document.getElementById('messageText').value = '';
+                } else {
+                    alert('Failed to send message: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Encrypt & send error:', error);
+                alert('An error occurred while sending the message.');
+            }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length === 0) return alert('Please select a file first.');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch('/upload-file', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData
+                });
+                if (!res.ok) throw new Error(`File upload failed (Status ${res.status})`);
+                alert('File uploaded successfully!');
+                fileInput.value = '';
+            } catch (error) {
+                console.error('File upload error:', error);
+                alert('An error occurred while uploading the file.');
+            }
+        }
+
+        async function getFriends() {
+    const token = localStorage.getItem('token');  // Retrieve token
+    try {
+        const res = await fetch('/get_friends', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Failed to load friends (Status ${res.status})`);
+        const friends = await res.json();
+        console.log('Friends:', friends);  // Debugging!
+        const friendList = document.getElementById('friendList');
+        friendList.innerHTML = '';
+        friends.forEach(friend => {
+            const li = document.createElement('li');
+            li.textContent = friend;
+            li.setAttribute('data-initial', friend[0].toUpperCase());
+            friendList.appendChild(li);
+        });
+        updateRecipientSelect(friends);
+    } catch (error) {
+        console.error('Get friends error:', error);
+        alert('Failed to load friends: ' + error.message);
+    }
+}
+
+        async function addFriend() {
+            const friendUsername = document.getElementById('friendUsername').value.trim();
+            if (!friendUsername) return alert('Please enter a friend\'s username.');
+            if (friendUsername === username) return alert('You cannot add yourself as a friend.');
+            try {
+                const res = await fetch('http://127.0.0.1:5000/add_friend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ friendUsername })
+                });
+                if (!res.ok) throw new Error(`Failed to add friend (Status ${res.status})`);
+                const data = await res.json();
+                if (data.success) {
+                    alert('Friend added successfully!');
+                    document.getElementById('friendUsername').value = '';
+                    await getFriends();
+                } else {
+                    alert('Failed to add friend: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Add friend error:', error);
+                alert('An error occurred while adding the friend.');
+            }
+        }
+
+        function updateRecipientSelect(friends) {
+            const select = document.getElementById('recipientSelect');
+            const previousRecipient = select.value;
+            select.innerHTML = '<option value="" disabled>Select recipient</option>';
+            friends.forEach(friend => {
+                const option = document.createElement('option');
+                option.value = friend;
+                option.textContent = friend;
+                select.appendChild(option);
+            });
+            if (friends.includes(previousRecipient)) {
+                select.value = previousRecipient;
+            } else {
+                document.getElementById('chatRecipient').textContent = '[Select recipient]';
+                document.getElementById('chatBox').innerHTML = '<p><em>Encrypted chat history will appear here...</em></p>';
+                currentRecipient = null;
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            window.location.href = '/';
+        });
+
+        window.addEventListener('load', () => {
+            getFriends();
+        });
+    </script>
+</body>
+</html>

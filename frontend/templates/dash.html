@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SecureSys Dashboard</title>
+<link rel="stylesheet" href="/static/mess.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* GLOBAL */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #1c1f4a;
+    color: #fff;
+}
+.container {
+    display: flex;
+    height: 100vh;
+}
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    background: #2e328a;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.sidebar-header h2 {
+    margin: 0 0 20px;
+}
+.nav-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #4146a5;
+    border: none;
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.nav-btn.active {
+    background: #6c63ff;
+}
+.nav-btn:hover {
+    background: #5a55d4;
+}
+.logout-btn {
+    padding: 12px;
+    margin-top: auto;
+    background: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.logout-btn:hover {
+    background: #b54643;
+}
+/* MAIN CONTENT */
+.content {
+    flex: 1;
+    padding: 25px;
+    overflow-y: auto;
+}
+.section {
+    display: none;
+}
+.section.active {
+    display: block;
+}
+/* CARDS */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.card {
+    background: #3b3f9c;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+.card h4 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+.card p {
+    font-size: 24px;
+    margin: 0;
+}
+/* TABLES */
+.activity-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+.activity-table th,
+.activity-table td {
+    border-bottom: 1px solid #555;
+    padding: 10px;
+}
+/* COMPOSE FORM */
+.compose-form input, .compose-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: none;
+}
+.compose-form button {
+    background: #6c63ff;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.compose-form button:hover {
+    background: #5a55d4;
+}
+/* MODAL */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.modal.hidden {
+  display: none;
+}
+.modal-content {
+  background: #3b3f9c;
+  padding: 25px;
+  border-radius: 10px;
+  width: 320px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2><i class="fas fa-shield-alt"></i> SecureSys</h2>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-section="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+      <button class="nav-btn" data-section="inbox"><i class="fas fa-inbox"></i> Inbox</button>
+      <button class="nav-btn" data-section="compose"><i class="fas fa-edit"></i> Compose</button>
+      <button class="nav-btn" data-section="sent"><i class="fas fa-paper-plane"></i> Sent</button>
+    </nav>
+
+    <button class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <!-- DASHBOARD SECTION -->
+    <section id="dashboard" class="section active">
+      <h3><i class="fas fa-chart-line"></i> Dashboard Overview</h3>
+      <div class="cards">
+        <div class="card"><h4>Total Users</h4><p>1248</p></div>
+        <div class="card"><h4>Active Sessions</h4><p>87</p></div>
+        <div class="card"><h4>Messages Sent</h4><p>432</p></div>
+        <div class="card"><h4>System Load</h4><p>42%</p></div>
+      </div>
+      <h3>Recent Activity</h3>
+      <table class="activity-table">
+        <thead><tr><th>User</th><th>Action</th><th>IP</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>admin</td><td>Logged in</td><td>192.168.0.2</td><td>2 min ago</td></tr>
+          <tr><td>john.doe</td><td>Requested OTP</td><td>192.168.0.5</td><td>10 min ago</td></tr>
+          <tr><td>alice.dev</td><td>Viewed logs</td><td>10.0.0.3</td><td>30 min ago</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- INBOX SECTION -->
+    <section id="inbox" class="section">
+      <h3><i class="fas fa-inbox"></i> Inbox</h3>
+      <div id="messageList">Loading messages...</div>
+    </section>
+
+    <!-- COMPOSE SECTION -->
+    <section id="compose" class="section">
+      <h3><i class="fas fa-edit"></i> Compose Message</h3>
+      <form class="compose-form">
+        <input type="text" placeholder="Recipient Email" id="composeRecipient">
+        <input type="text" placeholder="Subject" id="composeSubject">
+        <textarea rows="6" placeholder="Message Body" id="composeBody"></textarea>
+        <button type="button" onclick="sendMessage()">Send</button>
+      </form>
+    </section>
+
+    <!-- SENT SECTION -->
+    <section id="sent" class="section">
+      <h3><i class="fas fa-paper-plane"></i> Sent Messages</h3>
+      <div id="sentList">Loading sent messages...</div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Sidebar navigation
+const navButtons = document.querySelectorAll('.nav-btn');
+const sections = document.querySelectorAll('.section');
+
+navButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Remove active class
+    navButtons.forEach(b => b.classList.remove('active'));
+    sections.forEach(s => s.classList.remove('active'));
+    // Add active to clicked
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.section).classList.add('active');
+  });
+});
+
+// Dummy sendMessage function
+function sendMessage() {
+  const to = document.getElementById('composeRecipient').value;
+  const subject = document.getElementById('composeSubject').value;
+  const body = document.getElementById('composeBody').value;
+  alert(`Message sent to ${to} with subject "${subject}"`);
+}
+</script>
+
+</body>
+</html>

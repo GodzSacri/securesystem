@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - SecureSys</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f6f9; }
+header { 
+    background: #2c3e50; 
+    color: white; 
+    padding: 15px 20px; 
+    display:flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+header h1 { margin:0; font-size:1.5rem; }
+header button { 
+    background:#e74c3c; 
+    color:white; 
+    border:none; 
+    padding:8px 15px; 
+    border-radius:5px; 
+    cursor:pointer; 
+    font-weight:bold;
+}
+.container { padding:20px; }
+.tabs { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+.tab-btn { padding:10px 15px; background:white; border:none; border-radius:5px; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+.tab-btn.active { background:#6c63ff; color:white; }
+.section { display:none; background:white; padding:20px; margin-bottom:20px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+table { width:100%; border-collapse: collapse; margin-top:10px; }
+table th, table td { padding:10px; text-align:left; border-bottom:1px solid #ddd; }
+table th { background-color:#f1f1f1; }
+.status-online { color: green; font-weight:bold; }
+.status-suspicious { color:red; font-weight:bold; }
+form label { display:block; margin-top:10px; }
+form input, form select { padding:8px; width:100%; margin-top:5px; border-radius:5px; border:1px solid #ccc; }
+form button { margin-top:15px; background:#6c63ff; color:white; border:none; padding:10px 15px; cursor:pointer; border-radius:5px; }
+#registerMsg { margin-top:10px; font-weight:bold; }
+
+/* Logs Styles */
+.logs-container {
+    max-height: 500px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    border-radius: 5px;
+}
+.log-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    font-family: monospace;
+}
+.log-entry:hover {
+    background: #2d2d2d;
+}
+.log-time {
+    color: #6a9955;
+    margin-right: 15px;
+}
+.log-level {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 10px;
+    font-weight: bold;
+}
+.log-level-info { background: #007acc; color: white; }
+.log-level-warning { background: #dcdcaa; color: #1e1e1e; }
+.log-level-error { background: #f14c4c; color: white; }
+.log-level-success { background: #6a9955; color: white; }
+.log-message {
+    color: #d4d4d4;
+}
+.log-clear-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.log-clear-btn:hover {
+    background: #c0392b;
+}
+.log-stats {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    font-size: 14px;
+}
+</style>
+</head>
+<body>
+<header>
+    <h1>Admin Dashboard - SecureSys</h1>
+    <button id="logoutBtn">Logout</button>
+</header>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="onlineUsersSection">Online Users</button>
+        <button class="tab-btn" data-tab="suspiciousSection">Suspicious Activity</button>
+        <button class="tab-btn" data-tab="doctorMessagesSection">Weekly Doctor Messages</button>
+        <button class="tab-btn" data-tab="registerSection">Register User</button>
+        <button class="tab-btn" data-tab="logsSection">📋 System Logs</button>
+    </div>
+
+    <!-- Online Users -->
+    <div id="onlineUsersSection" class="section" style="display:block;">
+        <h2>Online Users (last 5 mins)</h2>
+        <table id="onlineUsersTable">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Last Active</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Suspicious Activity -->
+    <div id="suspiciousSection" class="section">
+        <h2>Suspicious Activity (multiple IPs in last hour)</h2>
+        <table id="suspiciousTable">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Number of IPs</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Weekly Doctor Messages -->
+    <div id="doctorMessagesSection" class="section">
+        <h2>Weekly Doctor Messages</h2>
+        <table id="doctorMessagesTable">
+            <thead>
+                <tr>
+                    <th>Doctor Email</th>
+                    <th>Messages This Week</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Register User -->
+    <div id="registerSection" class="section">
+        <h2>Register New User</h2>
+        <form id="registerForm">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" name="email" required>
+
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" name="password" required>
+
+            <label for="regRole">Role</label>
+            <select id="regRole" name="role">
+                <option value="client">Client</option>
+                <option value="doctor">Doctor</option>
+            </select>
+
+            <button type="submit">Register</button>
+        </form>
+        <div id="registerMsg"></div>
+    </div>
+
+    <!-- System Logs Section -->
+    <div id="logsSection" class="section">
+        <h2><i class="fas fa-history"></i> System Logs</h2>
+        <div class="log-stats">
+            <span id="logCount">0</span> logs recorded
+            <button id="clearLogsBtn" class="log-clear-btn" style="float: right;">Clear All Logs</button>
+        </div>
+        <div id="logsContainer" class="logs-container">
+            <div class="log-entry">
+                <span class="log-time">--:--:--</span>
+                <span class="log-level log-level-info">INFO</span>
+                <span class="log-message">Logs will appear here...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== LOGGING SYSTEM ====================
+class SystemLogger {
+    constructor() {
+        this.logs = this.loadLogs();
+        this.maxLogs = 500;
+    }
+
+    loadLogs() {
+        const saved = localStorage.getItem('system_logs');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveLogs() {
+        localStorage.setItem('system_logs', JSON.stringify(this.logs.slice(-this.maxLogs)));
+    }
+
+    addLog(level, message, details = {}) {
+        const logEntry = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            level: level, // INFO, WARNING, ERROR, SUCCESS
+            message: message,
+            details: details,
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        };
+        
+        this.logs.push(logEntry);
+        this.saveLogs();
+        this.render();
+        
+        // Also log to console
+        console.log(`[${level}] ${message}`, details);
+        
+        return logEntry;
+    }
+
+    clearLogs() {
+        this.logs = [];
+        this.saveLogs();
+        this.render();
+    }
+
+    getLogs() {
+        return this.logs.slice().reverse();
+    }
+
+    getStats() {
+        const stats = {
+            total: this.logs.length,
+            info: this.logs.filter(l => l.level === 'INFO').length,
+            warning: this.logs.filter(l => l.level === 'WARNING').length,
+            error: this.logs.filter(l => l.level === 'ERROR').length,
+            success: this.logs.filter(l => l.level === 'SUCCESS').length
+        };
+        return stats;
+    }
+
+    render() {
+        const container = document.getElementById('logsContainer');
+        const logCountSpan = document.getElementById('logCount');
+        
+        if (!container) return;
+        
+        const logs = this.getLogs();
+        if (logCountSpan) logCountSpan.textContent = logs.length;
+        
+        if (logs.length === 0) {
+            container.innerHTML = `<div class="log-entry">
+                <span class="log-time">--:--:--</span>
+                <span class="log-level log-level-info">INFO</span>
+                <span class="log-message">No logs recorded yet.</span>
+            </div>`;
+            return;
+        }
+        
+        container.innerHTML = logs.map(log => {
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            let levelClass = '';
+            switch(log.level) {
+                case 'INFO': levelClass = 'log-level-info'; break;
+                case 'WARNING': levelClass = 'log-level-warning'; break;
+                case 'ERROR': levelClass = 'log-level-error'; break;
+                case 'SUCCESS': levelClass = 'log-level-success'; break;
+                default: levelClass = 'log-level-info';
+            }
+            
+            let detailsText = '';
+            if (Object.keys(log.details).length > 0) {
+                detailsText = ` <span style="color: #858585;">${JSON.stringify(log.details)}</span>`;
+            }
+            
+            return `<div class="log-entry">
+                <span class="log-time">${time}</span>
+                <span class="log-level ${levelClass}">${log.level}</span>
+                <span class="log-message">${escapeHtml(log.message)}${detailsText}</span>
+            </div>`;
+        }).join('');
+        
+        container.scrollTop = 0;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize logger
+const logger = new SystemLogger();
+
+// ==================== ADMIN DASHBOARD ====================
+(async function() {
+    const ACCESS_TOKEN = localStorage.getItem('token');
+    
+    logger.addLog('INFO', 'Admin dashboard loaded', { tokenPresent: !!ACCESS_TOKEN });
+    
+    if (!ACCESS_TOKEN) { 
+        logger.addLog('WARNING', 'No token found, redirecting to login');
+        window.location.href = '/'; 
+        return; 
+    }
+
+    // Tab functionality
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            logger.addLog('INFO', `Switched to tab: ${tabName}`);
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.section').forEach(sec => sec.style.display='none');
+            document.getElementById(tab.dataset.tab).style.display = 'block';
+        });
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        logger.addLog('INFO', 'Admin logged out');
+        localStorage.removeItem('token');
+        window.location.href = '/';
+    });
+
+    // Clear logs button
+    const clearLogsBtn = document.getElementById('clearLogsBtn');
+    if (clearLogsBtn) {
+        clearLogsBtn.addEventListener('click', () => {
+            logger.addLog('INFO', 'Logs cleared by admin');
+            logger.clearLogs();
+        });
+    }
+
+    // Fetch Online Users
+    async function fetchOnlineUsers() {
+        logger.addLog('INFO', 'Fetching online users');
+        try {
+            const res = await fetch('/api/admin/online-users', { headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` } });
+            const data = await res.json();
+            if (!data.success) { 
+                if (res.status===401||res.status===403) {
+                    logger.addLog('WARNING', 'Unauthorized access to online users');
+                    window.location.href='/'; 
+                }
+                return; 
+            }
+            const tbody = document.querySelector("#onlineUsersTable tbody"); 
+            tbody.innerHTML='';
+            data.online_users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${user.email}<\/td><td>${user.role}<\/td><td>${new Date(user.last_active).toLocaleString()}<\/td><td>${user.last_ip||'-'}<\/td><td class="status-online">Online<\/td>`;
+                tbody.appendChild(tr);
+            });
+            logger.addLog('SUCCESS', `Fetched ${data.online_users.length} online users`);
+        } catch(err){ 
+            logger.addLog('ERROR', 'Error fetching online users', { error: err.message });
+            console.error('Error fetching online users:', err); 
+        }
+    }
+
+    // Fetch Suspicious Activity
+    async function fetchSuspicious() {
+        logger.addLog('INFO', 'Fetching suspicious activity');
+        try {
+            const res = await fetch('/api/admin/suspicious-activity', { headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` } });
+            const data = await res.json();
+            if (!data.success) { 
+                if (res.status===401||res.status===403) {
+                    logger.addLog('WARNING', 'Unauthorized access to suspicious activity');
+                    window.location.href='/'; 
+                }
+                return; 
+            }
+            const tbody = document.querySelector("#suspiciousTable tbody"); 
+            tbody.innerHTML='';
+            data.suspicious_users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${user.email}<\/td><td>${user.ip_count}<\/td><td class="status-suspicious">Suspicious<\/td>`;
+                tbody.appendChild(tr);
+            });
+            logger.addLog('SUCCESS', `Found ${data.suspicious_users.length} suspicious users`);
+        } catch(err){ 
+            logger.addLog('ERROR', 'Error fetching suspicious activity', { error: err.message });
+            console.error('Error fetching suspicious users:', err); 
+        }
+    }
+
+    // Fetch Weekly Doctor Messages
+    async function fetchDoctorMessages() {
+        logger.addLog('INFO', 'Fetching doctor weekly messages');
+        try {
+            const res = await fetch('/api/admin/doctor-weekly-messages', { headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` } });
+            if (!res.ok) { 
+                logger.addLog('ERROR', `Doctor messages API returned ${res.status}`);
+                return; 
+            }
+            const data = await res.json();
+            if (!data.success) { 
+                logger.addLog('ERROR', data.msg);
+                return; 
+            }
+            const tbody = document.querySelector("#doctorMessagesTable tbody"); 
+            tbody.innerHTML='';
+            data.doctors.forEach(doc => { 
+                const tr=document.createElement('tr'); 
+                tr.innerHTML=`<td>${doc.email}<\/td><td>${doc.message_count}<\/td>`; 
+                tbody.appendChild(tr); 
+            });
+            logger.addLog('SUCCESS', `Fetched ${data.doctors.length} doctor message counts`);
+        } catch(err){ 
+            logger.addLog('ERROR', 'Error fetching doctor messages', { error: err.message });
+            console.error('Error fetching doctor messages:', err); 
+        }
+    }
+
+    // Register user form
+    document.getElementById('registerForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const role = document.getElementById('regRole').value;
+
+        logger.addLog('INFO', `Registering new user: ${email} as ${role}`);
+        
+        try {
+            const res = await fetch('/api/register', {
+                method:'POST',
+                headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${ACCESS_TOKEN}` },
+                body: JSON.stringify({ email, password, role })
+            });
+            const data = await res.json();
+            const msgDiv = document.getElementById('registerMsg');
+            msgDiv.style.color = data.success ? 'green' : 'red';
+            msgDiv.textContent = data.msg;
+            if(data.success){ 
+                logger.addLog('SUCCESS', `User registered: ${email} as ${role}`);
+                document.getElementById('registerForm').reset(); 
+                fetchOnlineUsers(); 
+            } else {
+                logger.addLog('ERROR', `Registration failed: ${data.msg}`);
+            }
+        } catch(err){ 
+            logger.addLog('ERROR', 'Error registering user', { error: err.message });
+            console.error('Error registering user:', err); 
+        }
+    });
+
+    // Log initial page load
+    logger.addLog('SUCCESS', 'Admin dashboard initialized');
+
+    // Initial fetch and refresh
+    await fetchOnlineUsers();
+    await fetchSuspicious();
+    await fetchDoctorMessages();
+    
+    setInterval(fetchOnlineUsers,30000);
+    setInterval(fetchSuspicious,30000);
+    setInterval(fetchDoctorMessages,30000);
+
+})();
+</script>
+</body>
+</html>
