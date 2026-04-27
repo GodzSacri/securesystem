@@ -68,7 +68,7 @@
 <div id="notification" class="hidden"></div>
 
 <script>
-const apiUrl = "http://127.0.0.1:5000";
+const apiUrl = "https://securesys-backend.onrender.com";  // ✅ Changed to your Render backend
 
 let loginCaptchaAnswer = 0;
 let registerCaptchaAnswer = 0;
@@ -101,7 +101,6 @@ function toggleForm(type) {
 }
 
 async function login() {
-  // FIX: use getElementById instead of bare variable names
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
   const captchaInput = parseInt(document.getElementById("loginCaptchaAnswer").value);
@@ -128,7 +127,6 @@ async function login() {
 
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("role", data.role);
-    // FIX: store email so Auth.getEmail() works throughout the app
     localStorage.setItem("email", email);
 
     if (data.role === "admin") location.href = "/admin";
@@ -140,7 +138,6 @@ async function login() {
 }
 
 async function register() {
-  // FIX: use getElementById instead of bare variable names
   const email = document.getElementById("regEmail").value.trim();
   const password = document.getElementById("regPassword").value;
   const confirmPassword = document.getElementById("regConfirmPassword").value;
@@ -151,7 +148,6 @@ async function register() {
     return;
   }
 
-  // FIX: validate password confirmation (was completely missing)
   if (password !== confirmPassword) {
     showNotification("Passwords do not match", true);
     return;
@@ -172,7 +168,6 @@ async function register() {
     const res = await fetch(`${apiUrl}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // FIX: removed role from payload — no role selector in the form
       body: JSON.stringify({ email, password })
     });
 
@@ -188,6 +183,7 @@ async function register() {
 }
 
 generateCaptcha();
+</script>
 </script>
 </body>
 </html>
