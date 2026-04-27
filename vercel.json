@@ -1,8 +1,11 @@
 {
   "rewrites": [
-    { 
-      "source": "/(.*)", 
-      "destination": "/frontend/templates/login.html" 
-    }
-  ]
+    { "source": "/inbox", "destination": "/inbox.html" },
+    { "source": "/compose", "destination": "/compose.html" },
+    { "source": "/sent", "destination": "/sent.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/view_message/:id", "destination": "/view_message.html" },
+    { "source": "/static/(.*)", "destination": "/static/$1" }
+  ],
+  "cleanUrls": true
 }
