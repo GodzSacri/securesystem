@@ -68,7 +68,8 @@
 <div id="notification" class="hidden"></div>
 
 <script>
-const apiUrl = "https://securesys-backend.onrender.com";  // ✅ Changed to your Render backend
+const apiUrl = "https://securesys-backend.onrender.com";
+const frontendUrl = "https://securesystem-wcd6.vercel.app";
 
 let loginCaptchaAnswer = 0;
 let registerCaptchaAnswer = 0;
@@ -129,17 +130,18 @@ async function login() {
     localStorage.setItem("role", data.role);
     localStorage.setItem("email", email);
 
-    // Redirect to Vercel frontend pages
+    // ✅ Redirect to Vercel frontend pages
     if (data.role === "admin") {
-      window.location.href = "https://securesystem-wcd6.vercel.app/admin";
+      window.location.href = `${frontendUrl}/admin`;
     } else {
-      window.location.href = "https://securesystem-wcd6.vercel.app/inbox";
+      window.location.href = `${frontendUrl}/inbox`;
     }
 
   } catch (e) {
     showNotification(e.message, true);
   }
 }
+
 async function register() {
   const email = document.getElementById("regEmail").value.trim();
   const password = document.getElementById("regPassword").value;
@@ -186,7 +188,6 @@ async function register() {
 }
 
 generateCaptcha();
-</script>
 </script>
 </body>
 </html>
