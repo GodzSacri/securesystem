@@ -1,6 +1,6 @@
 // ==================== CONSTANTS AND CONFIGURATION ====================
 const CONFIG = {
-    API_URL: "https://securesys1.onrender.com",
+    API_URL: "https://securesys-backend.onrender.com",
     TOKEN_KEY: "token",
     EMAIL_KEY: "email",
     ALLOWED_PATHS: ['/', '/login', '/register'],
