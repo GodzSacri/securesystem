@@ -1,18 +1,12 @@
 {
   "rewrites": [
+    { "source": "/", "destination": "/login.html" },
+    { "source": "/login", "destination": "/login.html" },
     { "source": "/inbox", "destination": "/inbox.html" },
     { "source": "/compose", "destination": "/compose.html" },
     { "source": "/sent", "destination": "/sent.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/view_message/:id", "destination": "/view_message.html" }
   ],
-  "cleanUrls": true,
-  "headers": [
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ]
+  "cleanUrls": true
 }
