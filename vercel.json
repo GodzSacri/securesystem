@@ -1,14 +1,12 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/frontend/login.html" },
-    { "source": "/login", "destination": "/frontend/login.html" },
-    { "source": "/inbox", "destination": "/frontend/inbox.html" },
-    { "source": "/compose", "destination": "/frontend/compose.html" },
-    { "source": "/sent", "destination": "/frontend/sent.html" },
-    { "source": "/admin", "destination": "/frontend/admin.html" },
-    { "source": "/view_message/:id", "destination": "/frontend/view_message.html" },
-    { "source": "/css/(.*)", "destination": "/frontend/css/$1" },
-    { "source": "/js/(.*)", "destination": "/frontend/js/$1" },
-    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" }
+    { "source": "/", "destination": "/frontend/templates/login.html" },
+    { "source": "/login", "destination": "/frontend/templates/login.html" },
+    { "source": "/inbox", "destination": "/frontend/templates/inbox.html" },
+    { "source": "/compose", "destination": "/frontend/templates/compose.html" },
+    { "source": "/sent", "destination": "/frontend/templates/sent.html" },
+    { "source": "/admin", "destination": "/frontend/templates/admin.html" },
+    { "source": "/view_message/:id", "destination": "/frontend/templates/view_message.html" },
+    { "source": "/static/(.*)", "destination": "/frontend/static/$1" }
   ]
 }
