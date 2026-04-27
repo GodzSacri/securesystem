@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/login", "destination": "/login.html" }
+    { 
+      "source": "/(.*)", 
+      "destination": "/frontend/templates/login.html" 
+    }
   ]
 }
