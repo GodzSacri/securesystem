@@ -4,8 +4,8 @@ const CONFIG = {
     TOKEN_KEY: "token",
     EMAIL_KEY: "email",
     ALLOWED_PATHS: ['/', '/login', '/register'],
-    REQUEST_TIMEOUT: 10000, // 10 seconds
-    NOTIFICATION_DURATION: 3000 // 3 seconds
+    REQUEST_TIMEOUT: 10000,
+    NOTIFICATION_DURATION: 3000
 };
 
 console.log("=== MESS.JS LOADED ===");
@@ -73,7 +73,7 @@ const Auth = {
 };
 
 /**
- * API Communication
+ * API Communication - FIXED for FormData
  */
 const API = {
     fetch: async (url, options = {}) => {
@@ -81,13 +81,20 @@ const API = {
         
         const fullUrl = url.startsWith('http') ? url : `${CONFIG.API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
         
+        // Build headers - don't set Content-Type for FormData
         const headers = {
             'Authorization': `Bearer ${Auth.getToken()}`,
-            'Content-Type': 'application/json',
             ...options.headers
         };
+        
+        // Only add Content-Type JSON if it's not FormData and not already set
+        const isFormData = options.body instanceof FormData;
+        if (!isFormData && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
+        }
 
-        console.log(`Request headers: Authorization=${headers.Authorization ? 'Present' : 'Missing'}, Content-Type=${headers['Content-Type']}`);
+        console.log(`Request: ${options.method || 'GET'} ${fullUrl}`);
+        console.log(`Headers: Authorization=${headers.Authorization ? 'Present' : 'Missing'}, Content-Type=${headers['Content-Type'] || 'Not set (FormData)'}`);
 
         try {
             const controller = new AbortController();
@@ -174,16 +181,20 @@ const API = {
         }
     },
 
-    sendMessage: async (messageData) => {
-        console.log("Sending message to:", messageData.recipient_email);
+    sendMessage: async (formData) => {
+        console.log("Sending message via FormData");
+        const token = Auth.getToken();
+        
         try {
-            const response = await API.fetch("/api/send", {
+            const response = await fetch(`${CONFIG.API_URL}/api/send`, {
                 method: "POST",
-                body: JSON.stringify(messageData)
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData  // Send FormData directly
             });
             
             const data = await response.json();
-            
             console.log("Message sent:", data.success ? "SUCCESS" : "FAILED", data.msg);
             
             if (!data.success) {
@@ -216,7 +227,6 @@ const API = {
         }
     },
 
-    // FIX: check if recipient email exists in the system
     checkEmail: async (email) => {
         console.log("Checking email existence:", email);
         try {
@@ -229,7 +239,7 @@ const API = {
             return data.exists === true;
         } catch (error) {
             console.error("Failed to check email:", error);
-            return null; // null = could not verify
+            return null;
         }
     }
 };
@@ -423,10 +433,8 @@ const EventHandlers = {
         console.log("Setting up compose handlers");
         const { sendBtn, emailInput, subjectInput, bodyInput } = UI.elements;
         
-        // Setup encryption toggle
         UI.setupEncryptionToggle();
 
-        // FIX: Email validation now checks format AND whether user exists in system
         let emailCheckTimeout = null;
         emailInput?.addEventListener("input", () => {
             const email = emailInput.value.trim();
@@ -441,7 +449,6 @@ const EventHandlers = {
                 return;
             }
 
-            // Debounce — wait 600ms after user stops typing before hitting API
             clearTimeout(emailCheckTimeout);
             UI.showEmailValidation("Checking...", false);
             emailCheckTimeout = setTimeout(async () => {
@@ -449,25 +456,22 @@ const EventHandlers = {
                 if (exists === null) {
                     UI.showEmailValidation("Could not verify email", true);
                 } else if (exists) {
-                    UI.showEmailValidation("✓ Recipient found", false);
+                    UI.showEmailValidation("Recipient found", false);
                 } else {
-                    UI.showEmailValidation("✗ No user found with this email", true);
+                    UI.showEmailValidation("No user found with this email", true);
                 }
             }, 600);
         });
 
-        // Send message
         sendBtn?.addEventListener("click", async () => {
             console.log("Send button clicked");
             await handleSendMessage();
         });
 
-        // Handle Enter key in form fields
         [emailInput, subjectInput].forEach(element => {
             element?.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    console.log(`Enter key pressed in ${element.id}`);
                     if (element === emailInput && subjectInput) {
                         subjectInput.focus();
                     } else if (element === subjectInput && bodyInput) {
@@ -477,10 +481,8 @@ const EventHandlers = {
             });
         });
 
-        // Handle Ctrl+Enter in body to send
         bodyInput?.addEventListener("keydown", (e) => {
             if (e.ctrlKey && e.key === "Enter") {
-                console.log("Ctrl+Enter pressed - sending message");
                 e.preventDefault();
                 handleSendMessage();
             }
@@ -505,7 +507,6 @@ async function loadAndRenderInbox() {
             const encryptedCount = messages.filter(msg => msg.is_encrypted).length;
             UI.showNotification(`Loaded ${messages.length} messages (${encryptedCount} encrypted)`);
         }
-        console.log("loadAndRenderInbox completed");
     } catch (error) {
         console.error("Failed to load inbox:", error);
         UI.showError(messageList, error.message);
@@ -528,7 +529,6 @@ async function loadAndRenderSent() {
             const encryptedCount = messages.filter(msg => msg.is_encrypted).length;
             UI.showNotification(`Loaded ${messages.length} messages (${encryptedCount} encrypted)`);
         }
-        console.log("loadAndRenderSent completed");
     } catch (error) {
         console.error("Failed to load sent messages:", error);
         UI.showError(sentList, error.message);
@@ -551,9 +551,8 @@ async function handleSendMessage() {
         return;
     }
 
-    // FIX: block send if email validation shows recipient not found
     const validationMsg = UI.elements.emailValidationMsg;
-    if (validationMsg && validationMsg.classList.contains('error')) {
+    if (validationMsg && validationMsg.classList && validationMsg.classList.contains('error')) {
         UI.showNotification("Recipient email not found in the system", true);
         return;
     }
@@ -580,23 +579,15 @@ async function handleSendMessage() {
             }
         }
 
-        const response = await fetch(`${CONFIG.API_URL}/api/send`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${Auth.getToken()}`
-            },
-            body: formData
-        });
+        const result = await API.sendMessage(formData);
 
-        const result = await response.json();
-        console.log("Send result:", result);
-        
         if (!result.success) throw new Error(result.msg);
 
         UI.showNotification("Message sent successfully!");
         UI.clearForm();
-        document.getElementById("fileNames").textContent = "";
-        console.log("Message sent, redirecting to sent page in 1.5s");
+        const fileNamesDisplay = document.getElementById("fileNames");
+        if (fileNamesDisplay) fileNamesDisplay.textContent = "";
+        
         setTimeout(() => window.location.href = "/sent", 1500);
     } catch (err) {
         console.error("Send message error:", err);
@@ -628,7 +619,6 @@ async function initializeEncryption() {
         if (encryptToggle && encryptionStatus.encryption_available) {
             encryptToggle.checked = encryptionStatus.default_encrypt;
             UI.updateEncryptionStatus();
-            console.log("Encryption initialized with default:", encryptionStatus.default_encrypt);
         }
     } catch (error) {
         console.warn("Could not initialize encryption status:", error);
@@ -643,8 +633,6 @@ function initializeUserInfo() {
     if (userEmail && email) {
         userEmail.innerHTML = `<i class="fas fa-user-circle"></i> ${email}`;
         console.log("User email displayed:", email);
-    } else {
-        console.log("User email not found or element missing");
     }
 }
 
@@ -653,8 +641,6 @@ function initializeUserInfo() {
 async function initializeApp() {
     console.log("=== INITIALIZING APP ===");
     console.log("Current path:", window.location.pathname);
-    console.log("Token present:", !!Auth.getToken());
-    console.log("User email:", Auth.getEmail());
     
     if (!Auth.checkAuth()) return;
     
@@ -669,29 +655,18 @@ async function initializeApp() {
     
     switch (currentPath) {
         case "/inbox":
-            console.log("Loading inbox view");
             loadAndRenderInbox();
             break;
         case "/sent":
-            console.log("Loading sent view");
             loadAndRenderSent();
             break;
         case "/compose":
-            console.log("Loading compose view");
             const { emailInput } = UI.elements;
             if (emailInput) {
                 setTimeout(() => emailInput.focus(), 100);
             }
             break;
-        default:
-            console.log("Unknown path:", currentPath);
-            break;
     }
-    
-    console.log("=== APP INITIALIZED ===");
-    console.debug("App initialized for path:", currentPath);
-    console.debug("Current token:", Auth.getToken() ? "Present" : "Missing");
-    console.debug("User email:", Auth.getEmail());
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
