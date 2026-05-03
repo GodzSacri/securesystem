@@ -6,7 +6,6 @@
     { "source": "/compose", "destination": "/compose.html" },
     { "source": "/sent", "destination": "/sent.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/view_message/:id", "destination": "/view_message.html" },
-    { "source": "/static/(.*)", "destination": "/frontend/static/$1" }
-  ]
+    { "source": "/view_message/:id", "destination": "/view_message.html" }
+  ],
 }
