@@ -1,1 +1,13 @@
-
+{
+  "rewrites": [
+    { "source": "/", "destination": "/frontend/templates/login.html" },
+    { "source": "/login", "destination": "/frontend/templates/login.html" },
+    { "source": "/inbox", "destination": "/frontend/templates/inbox.html" },
+    { "source": "/compose", "destination": "/frontend/templates/compose.html" },
+    { "source": "/sent", "destination": "/frontend/templates/sent.html" },
+    { "source": "/admin", "destination": "/frontend/templates/admin.html" },
+    { "source": "/view_message/:id", "destination": "/frontend/templates/view_message.html" },
+    { "source": "/static/(.*)", "destination": "/frontend/static/$1" }
+  ],
+  "cleanUrls": true
+}
