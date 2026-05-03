@@ -25,18 +25,11 @@
       "destination": "/frontend/templates/admin.html"
     },
     {
-      "source": "/dash",
-      "destination": "/frontend/templates/dash.html"
-    },
-    {
-      "source": "/view_message/:id",
-      "destination": "/frontend/templates/viewmessage.html"
-    },
-    {
       "source": "/static/(.*)",
       "destination": "/frontend/static/$1"
     }
-  ],
+  ]
+}
   "routes": [
     {
       "src": "/api/(.*)",
