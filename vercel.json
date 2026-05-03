@@ -8,4 +8,5 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/view_message/:id", "destination": "/view_message.html" }
   ],
+  "cleanUrls": true
 }
