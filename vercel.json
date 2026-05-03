@@ -6,12 +6,15 @@
     { "source": "/compose", "destination": "/frontend/templates/compose.html" },
     { "source": "/sent", "destination": "/frontend/templates/sent.html" },
     { "source": "/admin", "destination": "/frontend/templates/admin.html" },
-    { "source": "/view_message/:id", "destination": "/frontend/templates/view_message.html" }
+    { "source": "/dash", "destination": "/frontend/templates/dash.html" },
+    { "source": "/view_message/:id", "destination": "/frontend/templates/viewmessage.html" },
+    { "source": "/static/(.*)", "destination": "/frontend/static/$1" }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "https://securesys-backend.onrender.com/api/$1",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
